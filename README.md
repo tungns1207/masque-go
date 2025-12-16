@@ -63,5 +63,5 @@ masque-proxy -b :4443 -c certs/server.crt -k certs/server.key -t "https://127.0.
 Run the client. Use the `-insecure` flag to skip certificate verification if using self-signed certs:
 
 ```bash
-masque-client -t "https://127.0.0.1:4443/masque?h={target_host}&p={target_port}" https://cloudflare-quic.com:443
+masque-client -insecure -t "https://127.0.0.1:4443/masque?h={target_host}&p={target_port}" https://cloudflare-quic.com:443
 ```
