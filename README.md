@@ -47,7 +47,7 @@ Set the certificate file and the key log location. This is required for Wireshar
 
 ```bash
 export SSL_CERT_FILE=certs/server.crt
-export SSLKEYLOGFILE=/tmp/keys.log
+export SSLKEYLOGFILE=certs/keys.log
 ```
 
 ### 4. Start the Proxy
