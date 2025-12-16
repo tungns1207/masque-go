@@ -22,7 +22,9 @@ import (
 
 func main() {
 	var proxyURITemplate string
+	var insecure bool
 	flag.StringVar(&proxyURITemplate, "t", "", "URI template")
+	flag.BoolVar(&insecure, "insecure", false, "skip TLS certificate verification")
 	flag.Parse()
 	if proxyURITemplate == "" {
 		flag.Usage()
@@ -38,6 +40,19 @@ func main() {
 			EnableDatagrams:   true,
 			InitialPacketSize: 1350,
 		},
+	}
+	if insecure {
+		cl.TLSClientConfig = &tls.Config{InsecureSkipVerify: true, NextProtos: []string{"h3"}}
+	}
+	if path := os.Getenv("SSLKEYLOGFILE"); path != "" {
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+		if err != nil {
+			log.Fatalf("failed to open SSLKEYLOGFILE: %v", err)
+		}
+		if cl.TLSClientConfig == nil {
+			cl.TLSClientConfig = &tls.Config{NextProtos: []string{"h3"}}
+		}
+		cl.TLSClientConfig.KeyLogWriter = f
 	}
 	host, port, err := extractHostAndPort(urls[0])
 	if err != nil {
@@ -56,8 +71,18 @@ func main() {
 					log.Fatal("dialing MASQUE failed:", err)
 				}
 				log.Printf("dialed connection: %s <-> %s", pconn.LocalAddr(), raddr)
+				if path := os.Getenv("SSLKEYLOGFILE"); path != "" {
+					f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+					if err != nil {
+						log.Fatalf("failed to open SSLKEYLOGFILE: %v", err)
+					}
+					tlsConf = tlsConf.Clone()
+					tlsConf.KeyLogWriter = f
+				}
+
 				quicConf = quicConf.Clone()
 				quicConf.DisablePathMTUDiscovery = true
+
 				return quic.DialEarly(ctx, pconn, raddr, tlsConf, quicConf)
 			},
 		},
